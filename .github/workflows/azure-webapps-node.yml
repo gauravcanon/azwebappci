@@ -20,7 +20,6 @@ permissions:
 
 jobs:
   pre-build:
-    if: github.event.action == 'opened'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
