@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   pre-build:
-    if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.pull_request.draft == false
+    if: github.event.action == 'opened' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -218,8 +218,11 @@ jobs:
             🚀 A preview of this Pull Request is ready. Click the link below to view it.
              ${{ steps.deploy-to-webapp.outputs.webapp-url }}
              Commit ID: ${{ github.event.pull_request.head.sha }}
+          reactions: rocket
 
-      - uses: gki/branch-lifetime@v1
+
+      - name: 'Branch Lifetime'
+        uses: gki/branch-lifetime@v1
         id: lifetime
         with:
           # You can set 'hour' or 'minute' as well. Default is 'hour'.
