@@ -228,11 +228,8 @@ jobs:
 
       # Delete Resources once PR is closed
   cleanup-resources:
-    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: github.event.action == 'closed'
     runs-on: ubuntu-latest
-    environment:
-      name: 'Development'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
       - name: Login via Azure CLI
