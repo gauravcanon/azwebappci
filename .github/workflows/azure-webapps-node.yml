@@ -38,14 +38,14 @@ jobs:
       uses: Azure/cli@v1
       with:
         inlineScript: |
-          az appservice plan create --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }} --resource-group ${{ env.RESOURCE_GROUP }} --sku B1 --is-linux
-#
-#    # Set the deployment slot's app setting to point to the staging slot
-#    - name: Set app setting
-#      uses: Azure/cli@v1
-#      with:
-#        inlineScript: |
-#          az webapp create --resource-group ${{ env.RESOURCE_GROUP }} --plan ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }} --runtime "NODE:${{ env.NODE_VERSION }}" --output table
+          az appservice plan create --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --resource-group ${{ env.RESOURCE_GROUP }} --sku B1 --is-linux
+
+    # Set the deployment slot's app setting to point to the staging slot
+    - name: Set app setting
+      uses: Azure/cli@v1
+      with:
+        inlineScript: |
+          az webapp create --resource-group ${{ env.RESOURCE_GROUP }} --plan ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }} --runtime "NODE:${{ env.NODE_VERSION }}" --output table
 #
 #
 #  build:
