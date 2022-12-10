@@ -13,7 +13,7 @@ env:
   AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
   NODE_VERSION: '18-lts'                # set this to the node version to use
   RESOURCE_GROUP: test-${{ github.event.pull_request.number }}-rg # add GTCRM- prefix to branch name
-  PR_IS_OLD: false
+#  PR_IS_OLD: false
 permissions:
   contents: read
   pull-requests: write
