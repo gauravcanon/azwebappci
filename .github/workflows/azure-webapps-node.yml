@@ -38,7 +38,7 @@ jobs:
             const pr = context.payload.pull_request;
             const prAge = new Date() - new Date(pr.created_at);
             const threeDays = 1000 * 60 * 60 * 24 * 3;
-            const isOld = prAge > threeDays;
+            const isOld = prAge < threeDays;
             core.info(`PR #${pr.number} is ${isOld ? '' : 'not'} older than three days`);
             return isOld;
 
