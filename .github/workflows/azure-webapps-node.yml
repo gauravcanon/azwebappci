@@ -8,7 +8,7 @@ on:
 env:
   BRANCH_NAME: ${{ github.event.pull_request.head.ref }} # get branch name from pull request
   PR_NUMBER: ${{ github.event.pull_request.number }}
-  AZURE_WEBAPP_NAME: ${{ github.event.pull_request.head.repo.name }}-${{ github.event.pull_request.head.ref }} # add GTCRM- prefix to branch name
+  AZURE_WEBAPP_NAME: pr-${{ github.event.pull_request.head.ref }} # add GTCRM- prefix to branch name
   AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
   NODE_VERSION: '18-lts'                # set this to the node version to use
   RESOURCE_GROUP: test-${{ github.event.pull_request.number }}-rg # add GTCRM- prefix to branch name
@@ -33,12 +33,12 @@ jobs:
         inlineScript: |
           az group create --name ${{ env.RESOURCE_GROUP }} --location "Central India"
 
-    # Create a new resource group to hold the deployment slot
+    # Create a new resource
     - name: Create App service plan
       uses: Azure/cli@v1
       with:
         inlineScript: |
-          az appservice plan create --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --resource-group ${{ env.RESOURCE_GROUP }} --sku B1 --is-linux
+          az appservice plan create --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }} --resource-group ${{ env.RESOURCE_GROUP }} --sku B1 --is-linux
 #
 #    # Set the deployment slot's app setting to point to the staging slot
 #    - name: Set app setting
