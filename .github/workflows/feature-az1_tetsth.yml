@@ -6,7 +6,7 @@ name: Build and deploy Node.js app to Azure Web App - tetsth
 on:
   push:
     branches:
-      - feature/az1
+      - master
   workflow_dispatch:
 
 jobs:
