@@ -13,6 +13,7 @@ env:
   AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
   NODE_VERSION: '18-lts'                # set this to the node version to use
   RESOURCE_GROUP: test-${{ github.event.pull_request.number }}-rg # add GTCRM- prefix to branch name
+  PR_IS_OLD: false
 permissions:
   contents: read
   pull-requests: write
@@ -38,13 +39,17 @@ jobs:
             const pr = context.payload.pull_request;
             const prAge = new Date() - new Date(pr.created_at);
             const threeDays = 1000 * 60 * 60 * 24 * 3;
-            const isOld = prAge < threeDays;
+            const isOld = prAge > threeDays;
             core.info(`PR #${pr.number} is ${isOld ? '' : 'not'} older than three days`);
             return isOld;
 
-
-      - name: Get result
+      - name: PR is older than three days
         run: echo "${{ steps.check-pr-age.outputs.result }}"
+
+      # Set env variable to true if PR is older than three days
+      - name: Set PR_IS_OLD env var
+        if: steps.check-pr-age.outputs.result == 'true'
+        run: echo "PR_IS_OLD=true" >> $GITHUB_ENV
       
       
 
@@ -248,9 +253,7 @@ jobs:
 
       # Delete Resources once PR is closed
   cleanup-resources:
-    if: github.event.action == 'closed'
-    # if pr is more than 3 days old from creation date
-    #    if: github.event.action == 'closed' && (github.event.pull_request.created_at | fromjson | fromdate | date('s') | int) < (now | date('s') | int) - 259200
+    if: github.event.action == 'closed' && env.PR_IS_OLD == 'true'
     runs-on: ubuntu-latest
     environment:
       name: 'Development'
