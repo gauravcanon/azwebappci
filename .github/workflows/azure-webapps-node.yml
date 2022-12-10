@@ -38,16 +38,16 @@ jobs:
     # if comment exist then don't create new comment
     - name: Create comment
       if: ${{ steps.fc.outputs.comment-id == 0 }}
+      id: create_comment_in_pr
       uses: peter-evans/create-or-update-comment@v2.1.0
       with:
         issue-number: ${{ github.event.pull_request.number }}
         comment-id: ${{ steps.fc.outputs.comment-id }}
         edit-mode: replace
         body: |
-          🚀 A preview of this Pull Request is ready. Click the link below to view it. 
-           ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-           Commit ID: ${{ github.event.pull_request.head.sha }}
-        reactions: rocket
+          A preview of this Pull Request is being created. Hold tight while it's building ⚒️  
+          This comment will be automatically updated when the preview is ready.
+        reactions: hooray
 
      # Create new resource group for the web app
     - name: Create resource group
@@ -145,11 +145,12 @@ jobs:
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
       # Update Comment on PR with deployment URL
-    - name: 'Comment on PR'
+    - name: 'Comment on PR with deployment URL'
+      id: comment-on-pr-with-deployment-url
       uses: peter-evans/create-or-update-comment@v2.1.0
       with:
         issue-number: ${{ github.event.pull_request.number }}
-        comment-id: ${{ steps.fc.outputs.comment-id }}
+        comment-id: ${{ steps.create_comment_in_pr.outputs.comment-id }}
         edit-mode: replace
         body: |
           🚀 A preview of this Pull Request is ready. Click the link below to view it. 
