@@ -239,22 +239,22 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-#
-#      # Delete resource group and webapp
-#      - name: Delete Resource Group
-#        uses: azure/CLI@v1
-#        with:
-#        inlineScript: |
-#          az group delete --name ${{ env.AZURE_RESOURCE_GROUP }}-${{ env.PR_NUMBER }} --yes
-#
-#      # find previous comment
-#      - name: Find comment Deployed
-#        uses: peter-evans/find-comment@v2
-#        id: deploy-preview-comment
-#        with:
-#          issue-number: ${{ github.event.pull_request.number }}
-#          comment-author: 'github-actions[bot]'
-#          body-includes: '🚀 A preview of this Pull Request is ready.'
+
+      # Delete resource group and webapp
+      - name: Delete Resource Group
+        uses: azure/CLI@v1
+        with:
+        inlineScript: |
+          az group delete --name ${{ env.AZURE_RESOURCE_GROUP }}-${{ env.PR_NUMBER }} --yes
+
+      # find previous comment
+      - name: Find comment Deployed
+        uses: peter-evans/find-comment@v2
+        id: deploy-preview-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '🚀 A preview of this Pull Request is ready.'
 #
 #      # Update found comment with new content
 #      - name: Delete Comment
