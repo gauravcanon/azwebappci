@@ -11,7 +11,7 @@ env:
   AZURE_WEBAPP_NAME: ${{ github.event.pull_request.head.repo.name }}-${{ github.event.pull_request.head.ref }} # add GTCRM- prefix to branch name
   AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
   NODE_VERSION: '18-lts'                # set this to the node version to use
-  RESOURCE_GROUP: 'azwebapp'
+  RESOURCE_GROUP: 'asgithub-RG'
 permissions:
   contents: read
   pull-requests: write
