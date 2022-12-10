@@ -29,6 +29,20 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Check pr is older than three days and print message
+        id: check-pr-age
+        uses: actions/github-script@v5
+        with:
+        script: |
+          const pr = context.payload.pull_request;
+          const prAge = new Date() - new Date(pr.created_at);
+          const threeDays = 1000 * 60 * 60 * 24 * 3;
+          const isOld = prAge > threeDays;
+          core.info(`PR #${pr.number} is ${isOld ? '' : 'not'} older than three days`);
+          return isOld;
+      
+      
+
       # Find if same comment exist then don't create new comment
       - name: Find comment
         uses: peter-evans/find-comment@v2
@@ -229,7 +243,8 @@ jobs:
 
       # Delete Resources once PR is closed
   cleanup-resources:
-    if: github.event.action == 'closed'
+    # if pr is more than 3 days old from creation date
+    if: github.event.action == 'closed' && (github.event.pull_request.created_at | fromjson | fromdate | date('s') | int) < (now | date('s') | int) - 259200
     runs-on: ubuntu-latest
     environment:
       name: 'Development'
