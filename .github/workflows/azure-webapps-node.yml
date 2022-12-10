@@ -262,7 +262,7 @@ jobs:
         if: steps.deploy-preview-comment.outputs.comment-id != 0
         uses: peter-evans/create-or-update-comment@v2.1.0
         with:
-          comment-id: ${{ steps.deploy-preview-comment-update.outputs.comment-id }}
+          comment-id: ${{ steps.deploy-preview-comment.outputs.comment-id }}
           edit-mode: replace
           body: |
             🏁 The preview of this Pull Request has been deleted.
