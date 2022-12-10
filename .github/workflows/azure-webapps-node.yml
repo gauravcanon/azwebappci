@@ -253,7 +253,7 @@ jobs:
 
       # Delete Resources once PR is closed
   cleanup-resources:
-    if: github.event.action == 'closed' && ${{env.PR_IS_OLD == 'true'}}
+    if: github.event.action == 'closed'
     runs-on: ubuntu-latest
     environment:
       name: 'Development'
