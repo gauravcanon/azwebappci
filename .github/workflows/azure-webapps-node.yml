@@ -4,7 +4,9 @@ on:
     branches: [ "develop" ]
     types: [ opened, synchronize, closed ]
   workflow_dispatch:
-
+  concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
 
 env:
   BRANCH_NAME: ${{ github.event.pull_request.head.ref }} # get branch name from pull request
