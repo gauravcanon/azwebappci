@@ -5,10 +5,6 @@ on:
     types: [ opened, synchronize, closed ]
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 env:
   BRANCH_NAME: ${{ github.event.pull_request.head.ref }} # get branch name from pull request
   PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -21,6 +17,10 @@ permissions:
   contents: read
   pull-requests: write
   actions: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   pre-build:
