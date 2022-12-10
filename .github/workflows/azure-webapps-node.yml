@@ -219,6 +219,15 @@ jobs:
              ${{ steps.deploy-to-webapp.outputs.webapp-url }}
              Commit ID: ${{ github.event.pull_request.head.sha }}
 
+      - uses: gki/branch-lifetime@v1
+        id: lifetime
+        with:
+          # You can set 'hour' or 'minute' as well. Default is 'hour'.
+          unit: second
+      - name: "Use output"
+        run: |
+          echo "${{ steps.lifetime.outputs.lifetime }}"
+          echo "${{ steps.lifetime.outputs.unit }}"
 
     #  # Delete Resources once PR is closed
     #  delete-resources:
