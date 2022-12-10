@@ -17,5 +17,11 @@ $ az group create --name [RESOURCE-GROUP-NAME] --location [LOCATION]
 ```
 
 
+(https://websitebeaver.com/deploy-create-react-app-to-azure-app-services)
+
+https://levelup.gitconnected.com/dynamic-pull-request-previews-with-github-actions-and-azure-app-service-1f613986eab8
+
+
+
 
 

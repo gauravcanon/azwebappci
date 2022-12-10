@@ -26,6 +26,29 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    # Find if same comment exist then don't create new comment
+    - name: Find comment
+      uses: peter-evans/find-comment@v2
+      id: fc
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-author: 'github-actions[bot]'
+        body-includes: 'A preview of this Pull Request is being created.'
+
+    # if comment exist then don't create new comment
+    - name: Create comment
+      if: ${{ steps.fc.outputs.comment-id == 0 }}
+      uses: peter-evans/create-or-update-comment@v2.1.0
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-id: ${{ steps.fc.outputs.comment-id }}
+        edit-mode: replace
+        body: |
+          🚀 A preview of this Pull Request is ready. Click the link below to view it. 
+           ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+           Commit ID: ${{ github.event.pull_request.head.sha }}
+        reactions: rocket
+
      # Create new resource group for the web app
     - name: Create resource group
       uses: azure/cli@v1
@@ -120,3 +143,16 @@ jobs:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}
         startup-command: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      # Update Comment on PR with deployment URL
+    - name: 'Comment on PR'
+      uses: peter-evans/create-or-update-comment@v2.1.0
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-id: ${{ steps.fc.outputs.comment-id }}
+        edit-mode: replace
+        body: |
+          🚀 A preview of this Pull Request is ready. Click the link below to view it. 
+           ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+           Commit ID: ${{ github.event.pull_request.head.sha }}
+        reactions: rocket
