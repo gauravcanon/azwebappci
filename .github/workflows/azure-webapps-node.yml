@@ -104,8 +104,6 @@ jobs:
         with:
           name: node-app
           path: build
-
-  # Deploy the zip file to the deployment slot
   deploy:
     if: github.event.action == 'opened'
     permissions:
@@ -236,35 +234,35 @@ jobs:
       name: 'Development'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
-    steps:
-      - name: Login via Azure CLI
-        uses: azure/login@v1
-        with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      # Delete resource group and webapp
-      - name: Delete Resource Group
-        uses: azure/CLI@v1
-        with:
-        inlineScript: |
-          az group delete --name ${{ env.AZURE_RESOURCE_GROUP }}-${{ env.PR_NUMBER }} --yes
-
-      # find previous comment
-      - name: Find comment Deployed
-        uses: peter-evans/find-comment@v2
-        id: deploy-preview-comment
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: '🚀 A preview of this Pull Request is ready.'
-
-      # Update found comment with new content
-      - name: Delete Comment
-        if: steps.deploy-preview-comment.outputs.comment-id != 0
-        uses: peter-evans/create-or-update-comment@v2.1.0
-        with:
-          comment-id: ${{ steps.deploy-preview-comment-update.outputs.comment-id }}
-          edit-mode: replace
-          body: |
-            🏁 The preview of this Pull Request has been deleted.
-    
+#    steps:
+#      - name: Login via Azure CLI
+#        uses: azure/login@v1
+#        with:
+#        creds: ${{ secrets.AZURE_CREDENTIALS }}
+#
+#      # Delete resource group and webapp
+#      - name: Delete Resource Group
+#        uses: azure/CLI@v1
+#        with:
+#        inlineScript: |
+#          az group delete --name ${{ env.AZURE_RESOURCE_GROUP }}-${{ env.PR_NUMBER }} --yes
+#
+#      # find previous comment
+#      - name: Find comment Deployed
+#        uses: peter-evans/find-comment@v2
+#        id: deploy-preview-comment
+#        with:
+#          issue-number: ${{ github.event.pull_request.number }}
+#          comment-author: 'github-actions[bot]'
+#          body-includes: '🚀 A preview of this Pull Request is ready.'
+#
+#      # Update found comment with new content
+#      - name: Delete Comment
+#        if: steps.deploy-preview-comment.outputs.comment-id != 0
+#        uses: peter-evans/create-or-update-comment@v2.1.0
+#        with:
+#          comment-id: ${{ steps.deploy-preview-comment-update.outputs.comment-id }}
+#          edit-mode: replace
+#          body: |
+#            🏁 The preview of this Pull Request has been deleted.
+#
