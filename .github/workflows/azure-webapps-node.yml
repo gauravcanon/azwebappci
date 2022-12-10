@@ -77,16 +77,16 @@ jobs:
 
 
       # Zip the build folder
-      - name: Zip Package
-        run: |
-          zip -r node-app.zip .
+#      - name: Zip Package
+#        run: |
+#          zip -r node-app.zip .
 
       # Upload the zip file to the deployment slot
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
           name: node-app
-          path: node-app.zip
+          path: build
 
 # Deploy the zip file to the deployment slot
   deploy:
@@ -118,5 +118,5 @@ jobs:
       uses: Azure/webapps-deploy@v2.2.5
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}
-        slot-name: 'Production'
-        package: node-app.zip
+        startup-command: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
