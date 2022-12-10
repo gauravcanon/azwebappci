@@ -3,7 +3,6 @@ on:
   pull_request:
     branches: [ "develop" ]
     types: [opened, synchronize, closed]
-  # stop in progress concurrency
     workflow_dispatch:
         inputs:
         stop:
