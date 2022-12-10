@@ -32,8 +32,8 @@ jobs:
       - name: Check pr is older than three days and print message
         id: check-pr-age
         uses: actions/github-script@v5
-        result-encoding: string
         with:
+          result-encoding: string
           script: |
             const pr = context.payload.pull_request;
             const prAge = new Date() - new Date(pr.created_at);
@@ -248,8 +248,9 @@ jobs:
 
       # Delete Resources once PR is closed
   cleanup-resources:
+    if: github.event.action == 'closed'
     # if pr is more than 3 days old from creation date
-    if: github.event.action == 'closed' && (github.event.pull_request.created_at | fromjson | fromdate | date('s') | int) < (now | date('s') | int) - 259200
+    #    if: github.event.action == 'closed' && (github.event.pull_request.created_at | fromjson | fromdate | date('s') | int) < (now | date('s') | int) - 259200
     runs-on: ubuntu-latest
     environment:
       name: 'Development'
