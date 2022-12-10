@@ -32,6 +32,7 @@ jobs:
       - name: Check pr is older than three days and print message
         id: check-pr-age
         uses: actions/github-script@v5
+        result-encoding: string
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -40,6 +41,10 @@ jobs:
             const isOld = prAge > threeDays;
             core.info(`PR #${pr.number} is ${isOld ? '' : 'not'} older than three days`);
             return isOld;
+
+
+      - name: Get result
+        run: echo "${{ steps.check-pr-age.outputs.result }}"
       
       
 
