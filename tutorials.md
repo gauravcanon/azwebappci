@@ -21,7 +21,6 @@ $ az group create --name [RESOURCE-GROUP-NAME] --location [LOCATION]
 
 https://levelup.gitconnected.com/dynamic-pull-request-previews-with-github-actions-and-azure-app-service-1f613986eab8
 
-
-
+Working web app
 
 
