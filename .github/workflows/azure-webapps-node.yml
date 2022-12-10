@@ -4,11 +4,6 @@ on:
     branches: [ "develop" ]
     types: [ opened, synchronize, closed ]
     workflow_dispatch:
-      inputs:
-      stop:
-        description: 'Stop in progress workflow'
-        required: false
-        default: 'false'
 
 
 env:
