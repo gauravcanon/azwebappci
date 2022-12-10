@@ -1,74 +1,80 @@
 name: Deploy Pull Request to Azure Web App
 on:
-  pull_request: 
+  pull_request:
     branches: [ "develop" ]
-    types: [opened, synchronize, closed]
+    types: [ opened, synchronize, closed ]
   workflow_dispatch:
+
 
 env:
   BRANCH_NAME: ${{ github.event.pull_request.head.ref }} # get branch name from pull request
   PR_NUMBER: ${{ github.event.pull_request.number }}
-  AZURE_WEBAPP_NAME: ${{ github.event.pull_request.head.repo.name }}-${{ github.event.pull_request.head.ref }} # add GTCRM- prefix to branch name
+  AZURE_WEBAPP_NAME: ${{ github.event.pull_request.head.repo.name }} # add GTCRM- prefix to branch name
   AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
   NODE_VERSION: '18-lts'                # set this to the node version to use
-  RESOURCE_GROUP: 'asgithub-RG'
+  RESOURCE_GROUP: test-${{ github.event.pull_request.number }}-rg # add GTCRM- prefix to branch name
 permissions:
   contents: read
   pull-requests: write
   actions: write
 
-# created the target Azure App Service web app.
-# For instructions see https://docs.microsoft.com/en-us/azure/app-service/quickstart-nodejs?tabs=linux&pivots=development-environment-cli
-
 jobs:
   pre-build:
-    if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.pull_request.draft == false 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    # find previous comment and delete it
-    - name: Delete previous comment
-      uses: peter-evans/find-comment@v2
-      id: fc
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        comment-author: 'github-actions[bot]'
-        body-regexp: '^.*.A preview of this Pull Request*$'
+      - uses: actions/checkout@v3
+      - name: Login via Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # Comment on PR build status add reaction to comment
-    - name: Initial Deployment Preview Comment
-      uses: peter-evans/create-or-update-comment@v2.1.0
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        comment-id: ${{ steps.fc.outputs.comment-id }}
-        body: |
-                A preview of this Pull Request is being created. Hold tight while it's building ⚒️  
-                This comment will be automatically updated when the preview is ready.
-        reactions: hooray
+      # Find if same comment exist then don't create new comment
+      - name: Find comment
+        uses: peter-evans/find-comment@v2
+        id: pr-preview-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'The Pull Request preview is being updated.'
 
-    - name: Login via Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    
-    # Create a new resource group to hold the deployment slot
-    - name: Create Resource Group
-      uses: Azure/cli@v1
-      with: 
-        inlineScript: |
-          az appservice plan create --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --resource-group ${{ env.RESOURCE_GROUP }} --sku S1 --is-linux
+      # if comment exist then don't create new comment
+      - name: Create comment
+        if: ${{ steps.fc.outputs.comment-id == 0 }}
+        uses: peter-evans/create-or-update-comment@v2.1.0
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.pr-preview-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            The Pull Request preview is being updated. Hold tight while it's building ⚒️
+            This comment will be automatically updated when the new version is ready.
+          reactions: hooray
 
-    # Set the deployment slot's app setting to point to the staging slot
-    - name: Set app setting
-      uses: Azure/cli@v1
-      with: 
-        inlineScript: |
-          az webapp create --resource-group ${{ env.RESOURCE_GROUP }} --plan ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }} --runtime "NODE:${{ env.NODE_VERSION }}" --output table
-          
+      # Create new resource group for the web app
+      - name: Create resource group
+        uses: azure/cli@v1
+        with:
+          inlineScript: |
+            az group create --name ${{ env.RESOURCE_GROUP }} --location "Central India"
+
+      # Create a new resource
+      - name: Create App service plan
+        uses: Azure/cli@v1
+        with:
+          inlineScript: |
+            az appservice plan create --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --resource-group ${{ env.RESOURCE_GROUP }} --sku B1 --is-linux
+
+      # Set the deployment slot's app setting to point to the staging slot
+      - name: Set app setting
+        uses: Azure/cli@v1
+        with:
+          inlineScript: |
+            az webapp create --resource-group ${{ env.RESOURCE_GROUP }} --plan ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }} --runtime "NODE:${{ env.NODE_VERSION }}" --output table
+
 
   build:
     runs-on: ubuntu-latest
-    needs: pre-build
+    needs: pre-build # wait for pre-build to finish
     steps:
       - uses: actions/checkout@v3
 
@@ -85,147 +91,178 @@ jobs:
           path: '**/node_modules'
           key: ${{ runner.os }}-modules-${{ hashFiles('**/package-lock.json') }}
 
-       # Install dependencies
+      # Install dependencies
       - name: Install Dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: |
           npm install
-          npm run ci --if-present
-          
+          npm run build --if-present
 
-
-      # tar the build folder
-      - name: Zip Package
-        run: |
-          zip -r node-app.zip .
-
-      # Upload the zip file to the deployment slot
+      # Upload Artifact
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
           name: node-app
-          path: node-app.zip
-
-# Deploy the zip file to the deployment slot
+          path: build
   deploy:
+    if: github.event.action == 'opened'
     permissions:
       contents: read
       pull-requests: write
     runs-on: ubuntu-latest
-    needs: build
+    needs: build # wait for build to finish
     environment:
       name: 'Development'
 
     steps:
-    - name: Download artifact from build job
-      uses: actions/download-artifact@v3
-      with:
-        name: node-app
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: node-app
 
-#    #Unpack the artifact
-#    - name: Unzip artifact
-#      run: unzip node-app.zip
+      - name: Login via Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Login via Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: 'Deploy to Azure WebApp'
+        id: deploy-to-webapp
+        uses: Azure/webapps-deploy@v2.2.5
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}
+          startup-command: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-    - name: 'Deploy to Azure WebApp'
-      id: deploy-to-webapp
-      uses: Azure/webapps-deploy@v2.2.5
-      with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}
-        package: node-app.zip
-        # Don't add slot
+      # find comment
+      - name: Find comment Deployed
+        uses: peter-evans/find-comment@v2
+        id: deploy-preview-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'The Pull Request preview is being updated.'
 
+        # Update Comment on PR with deployment URL
+      - name: 'Comment on PR with deployment URL'
+        uses: peter-evans/create-or-update-comment@v2.1.0
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-id: ${{ steps.deploy-preview-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            🚀 A preview of this Pull Request is ready. Click the link below to view it. 
+             ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+             Commit ID: ${{ github.event.pull_request.head.sha }}
+          reactions: rocket
 
-    # Update Comment on PR with deployment URL
-    - name: 'Comment on PR'
-      uses: peter-evans/create-or-update-comment@v2.1.0
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        comment-id: ${{ steps.fc.outputs.comment-id }}
-        edit-mode: replace
-        body: |
-               🚀 A preview of this Pull Request is ready. Click the link below to view it. 
-                ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-                Commit ID: ${{ github.event.pull_request.head.sha }}
-        reactions: rocket
-
-
-
-
-  update-deployment-preview:
-    if: ${{ github.event.pull_request.state == 'synchronize'  && github.event.pull_request.draft == false }}
-    permissions:
-      contents: read
-      pull-requests: write
+      # Deploy the zip file to the deployment slot
+  deploy-update:
+    if: github.event.action == 'synchronize'
     runs-on: ubuntu-latest
     needs: build
     environment:
       name: 'Development'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    
+
     steps:
-    - name: Download artifact from build job
-      uses: actions/download-artifact@v3
-      with:
-        name: node-app
+      # find comment
+      - name: Find comment Deployed
+        uses: peter-evans/find-comment@v2
+        id: deploy-preview-comment-update
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '🚀 A preview of this Pull Request is ready.'
 
-#    #Unpack the artifact
-#    - name: Unzip artifact
-#      run: unzip node-app.zip
-
-
-    - name: 'Deploy to Azure WebApp'
-      id: deploy-to-webapp
-      uses: Azure/webapps-deploy@v2.2.5
-      with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ env.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-    
-    # Update Comment on PR with deployment URL
-    - name: 'Comment on PR'
-      uses: peter-evans/create-or-update-comment@v2.1.0
-      with:
-        comment-id: ${{ steps.fc.outputs.comment-id }}
-        issue-number: ${{ github.event.pull_request.number }}
-        edit-mode: replace
-        body: |
-               🚀 A preview of this Pull Request is ready. Click the link below to view it. 
-                ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-        reactions: rocket
+        # Update Comment on PR with deployment URL
+      - name: Update PR Preview Comment
+        if: steps.deploy-preview-comment.outputs.comment-id != 0
+        uses: peter-evans/create-or-update-comment@v2.1.0
+        with:
+          comment-id: ${{ steps.deploy-preview-comment-update.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            The Pull Request preview is being updated. Hold tight while it's building ⚒️
+            This comment will be automatically updated when the new version is ready.
+          reactions: hooray
 
 
-  delete-azure-webapp:
-    if: ${{ github.event.pull_request.merged == true || github.event.pull_request.state == 'closed' || github.event.pull_request.updated_at < github.event.pull_request.created_at }}
-    runs-on: ubuntu-latest
-    needs: pre-build
-    steps:
-      - name: 'Delete Azure WebApp'
-        #Login to Azure
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: node-app
+
+      - name: Login via Azure CLI
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-          # Delete the app service and app resource
-      - name: 'Delete Azure WebApp'
+      - name: 'Deploy update to Azure WebApp'
+        id: deploy-to-webapp
+        uses: Azure/webapps-deploy@v2.2.5
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}
+          startup-command: 'pm2 serve /home/site/wwwroot --no-daemon --spa'
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+      # find comment
+      - name: Find comment Deployed
+        uses: peter-evans/find-comment@v2
+        id: initial-deploy-preview-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'The Pull Request preview is being updated.'
+
+      # Update comment on PR with deployment URL
+      - name: Update PR Preview Comment
+        uses: peter-evans/create-or-update-comment@v2.1.0
+        with:
+          comment-id: ${{ steps.initial-deploy-preview-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: |
+            🚀 A preview of this Pull Request is ready. Click the link below to view it.
+             ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+             Commit ID: ${{ github.event.pull_request.head.sha }}
+          reactions: rocket
+
+
+      # Delete Resources once PR is closed
+  cleanup-resources:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    environment:
+      name: 'Development'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+      - name: Login via Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Delete resource group and webapp
+      - name: Delete Resource Group
         uses: azure/CLI@v1
         with:
           inlineScript: |
-              az webapp delete --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_WEBAPP_NAME }} --slot sb-preview-${{ env.PR_NUMBER }}
-              az appservice plan delete --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ env.AZURE_WEBAPP_NAME }} --yes
-                 
+            az group delete --name ${{ env.AZURE_RESOURCE_GROUP }}-${{ env.PR_NUMBER }} --yes
 
-      # comment on the pr when the app service is deleted
-      - name: 'Comment on PR'
-        if: ${{ github.event.pull_request.merged == true || github.event.pull_request.state == 'closed' || github.event.pull_request.updated_at < github.event.pull_request.created_at }}
+      # find previous comment
+      - name: Find comment Deployed
+        uses: peter-evans/find-comment@v2
+        id: deploy-preview-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '🚀 A preview of this Pull Request is ready.'
+
+      # Update found comment with new content
+      - name: Delete Comment
+        if: steps.deploy-preview-comment.outputs.comment-id != 0
         uses: peter-evans/create-or-update-comment@v2.1.0
         with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
+          comment-id: ${{ steps.deploy-preview-comment-update.outputs.comment-id }}
           edit-mode: replace
           body: |
-                  🏁 The preview of this Pull Request has been deleted. 
-          reactions: hooray
+            🏁 The preview of this Pull Request has been deleted.
+
