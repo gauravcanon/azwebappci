@@ -246,7 +246,7 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            az group delete --name ${{ env.AZURE_RESOURCE_GROUP }}-${{ env.PR_NUMBER }} --yes
+            az group delete --name test-${{ github.event.pull_request.number }}-rg --yes
 
       # find previous comment
       - name: Find comment Deployed
