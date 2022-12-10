@@ -52,11 +52,11 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
     # Create a new resource group to hold the deployment slot
-    - name: Create Resource Group
+    - name: Create App service plan
       uses: Azure/cli@v1
       with: 
         inlineScript: |
-          az appservice plan create --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan --resource-group ${{ env.RESOURCE_GROUP }} --sku B1 --is-linux
+          az appservice plan create --name ${{ env.AZURE_WEBAPP_NAME }}-${{ env.PR_NUMBER }}-plan  --sku B1 --is-linux
 
     # Set the deployment slot's app setting to point to the staging slot
     - name: Set app setting
