@@ -244,8 +244,8 @@ jobs:
       - name: Delete Resource Group
         uses: azure/CLI@v1
         with:
-        inlineScript: |
-          az group delete --name ${{ env.AZURE_RESOURCE_GROUP }}-${{ env.PR_NUMBER }} --yes
+          inlineScript: |
+            az group delete --name ${{ env.AZURE_RESOURCE_GROUP }}-${{ env.PR_NUMBER }} --yes
 
       # find previous comment
       - name: Find comment Deployed
