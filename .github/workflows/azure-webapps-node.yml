@@ -1,9 +1,15 @@
 name: Deploy Pull Request to Azure Web App
 on:
-  pull_request: 
+  pull_request:
     branches: [ "develop" ]
     types: [opened, synchronize, closed]
-  workflow_dispatch:
+  # stop in progress concurrency
+    workflow_dispatch:
+        inputs:
+        stop:
+            description: 'Stop in progress workflow'
+            required: false
+            default: 'false'
 
 env:
   BRANCH_NAME: ${{ github.event.pull_request.head.ref }} # get branch name from pull request
@@ -16,7 +22,7 @@ env:
 
 jobs:
   pre-build:
-    if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.pull_request.draft == false 
+    if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
