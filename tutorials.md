@@ -10,4 +10,12 @@ $ az ad sp create-for-rbac --name "myApp" --role contributor --scopes /subscript
 $ az ad sp create-for-rbac --name CICD-SP --role Contributor --scopes /subscriptions/[SUBSCRIPTION-ID]/resourceGroups/[RESOURCE-GROUP-NAME] --sdk-auth
 ```
 
+Create Resource Group
+
+```shell
+$ az group create --name [RESOURCE-GROUP-NAME] --location [LOCATION]
+```
+
+
+
 

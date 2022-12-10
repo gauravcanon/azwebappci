@@ -31,7 +31,7 @@ jobs:
       uses: azure/cli@v1
       with:
         inlineScript: |
-          az group create --name ${{ env.RESOURCE_GROUP }} --location "West Europe"
+          az group create --name ${{ env.RESOURCE_GROUP }} --location centralindia
 #
 #    # Create a new resource group to hold the deployment slot
 #    - name: Create App service plan
